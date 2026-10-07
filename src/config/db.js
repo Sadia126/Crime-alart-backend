@@ -4,7 +4,13 @@ const mongoose = require('mongoose');
  * Connect to MongoDB using Mongoose.
  * @returns {Promise<void>}
  */
+let isConnected = false;
+
 const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return;
+  }
+
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
@@ -15,8 +21,10 @@ const connectDB = async () => {
     await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
     });
 
+    isConnected = true;
     console.log('MongoDB connected successfully');
   } catch (error) {
     console.error('MongoDB connection error:', error.message);

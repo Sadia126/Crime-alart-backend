@@ -21,17 +21,31 @@ const register = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ success: false, errors: errors.array().map((e) => e.msg) });
+      const errorList = errors.array().map((e) => e.msg);
+      return res.status(400).json({
+        success: false,
+        message: errorList[0] || 'Validation failed',
+        errors: errorList,
+      });
     }
 
-    const { name, email, password } = req.body;
+    const { name, email, password, avatar, phone, division, district, upazila } = req.body;
 
     const existing = await User.findOne({ email });
     if (existing) {
       return res.status(409).json({ success: false, message: 'Email already registered' });
     }
 
-    const user = await User.create({ name, email, passwordHash: password });
+    const user = await User.create({
+      name,
+      email,
+      passwordHash: password,
+      avatar: avatar || '',
+      phone: phone || '',
+      division: division || '',
+      district: district || '',
+      upazila: upazila || '',
+    });
 
     const token = generateToken({ id: user._id.toString(), email: user.email, role: user.role });
 
@@ -43,6 +57,10 @@ const register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
+        phone: user.phone,
+        division: user.division,
+        district: user.district,
+        upazila: user.upazila,
         role: user.role,
         status: user.status,
       },

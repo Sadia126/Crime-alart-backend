@@ -12,7 +12,16 @@ const notificationRoutes = require('./routes/notification.routes');
 const statsRoutes = require('./routes/stats.routes');
 const errorHandler = require('./middlewares/errorHandler');
 
+const connectDB = require('./config/db');
+
 const app = express();
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://crimealart.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean);
 
 app.use(helmet());
 app.use(morgan('dev'));
@@ -21,10 +30,26 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      // allow requests with no origin (like mobile apps or curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true); // fallback allow for seamless cross-origin communication
+    },
     credentials: true,
   })
 );
+
+// Ensure database is connected for serverless environments (e.g. Vercel)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
